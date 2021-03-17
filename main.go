@@ -3,6 +3,7 @@ package main
 import(
   "net/http"
   "html/template"
+  "fmt"
 )
 
 type todo struct{
@@ -10,12 +11,20 @@ type todo struct{
   status bool
 }
 
-func create(w http.ResponseWriter,req *http.Request){
+func add(w http.ResponseWriter,r *http.Request){
   t,_ := template.ParseFiles("index.html")
   t.Execute(w,nil)
 }
 
+func save(w http.ResponseWriter,r *http.Request){
+  description := r.FormValue("desc")
+  newTodo := todo{description,false}
+  fmt.Println(newTodo)
+}
+
 func main(){
-  http.HandleFunc("/",create)
+  http.HandleFunc("/add/",add)
+  http.HandleFunc("/save/",save)
   http.ListenAndServe(":8090",nil)
+
 }

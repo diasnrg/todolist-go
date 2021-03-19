@@ -6,11 +6,20 @@ import(
   "fmt"
   "log"
   "io/ioutil"
+  "os"
 )
 
 type todo struct{
-  descrition string
+  description string
   status bool
+}
+
+var file *os.File
+var err error
+
+func init(){
+  file, err = os.Create("output.txt")
+  check(err)
 }
 
 func add(w http.ResponseWriter,r *http.Request){
@@ -23,24 +32,22 @@ func save(w http.ResponseWriter,r *http.Request){
   newTodo := todo{description,false}
 
   //saving object to txt file
-  err := ioutil.WriteFile("output.txt", []byte(fmt.Sprintf("%v",newTodo)), 0644)
-  check(err)
-
-  //redirecting to the main page
-  http.Redirect(w,r,"/",http.StatusFound)
 
   //method 1
-    // f, err := os.Create("data.txt")
+    // file, err := os.Create("output.txt")
     // check(err)
-    // defer f.Close()
-    // _,err = f.WriteString(fmt.Sprintf("%v",newTodo))
-    // check(err)
-}
+    file, err = os.Open("output.txt")
+    defer file.Close()
+    _,err = file.WriteString(fmt.Sprintf("%v",newTodo))
+    check(err)
 
-func check(err error){
-  if err != nil{
-    log.Fatal(err)
-  }
+  // err := ioutil.WriteFile("output.txt", []byte(fmt.Sprintf("%v",newTodo)), 0644)
+  // check(err)
+
+  fmt.Printf("todo %v added\n",newTodo)
+
+  //redirecting to the main page
+  http.Redirect(w,r,"/list/",http.StatusFound)
 }
 
 func list(w http.ResponseWriter,r *http.Request){
@@ -52,8 +59,21 @@ func list(w http.ResponseWriter,r *http.Request){
 
 }
 
+func check(err error){
+  if err != nil{
+    log.Fatal(err)
+  }
+}
+
+func (t todo) String() string{
+  return fmt.Sprintf("%v:%v\n",t.description,t.status)
+}
+
 func main(){
-  http.HandleFunc("/",list)
+  http.HandleFunc("/",func(w http.ResponseWriter,r *http.Request){
+    http.Redirect(w,r,"/add/",http.StatusFound)
+  })
+  http.HandleFunc("/list/",list)
   http.HandleFunc("/add/",add)
   http.HandleFunc("/save/",save)
   http.ListenAndServe(":8090",nil)

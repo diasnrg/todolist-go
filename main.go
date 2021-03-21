@@ -6,6 +6,7 @@ import(
   "fmt"
   "log"
   "io/ioutil"
+  "strings"
 )
 
 type todo struct{
@@ -13,9 +14,21 @@ type todo struct{
   status bool
 }
 
+type todolist struct{
+  Todos []string
+}
+
 func add(w http.ResponseWriter,r *http.Request){
-  t,_ := template.ParseFiles("index.html")
+  t,_ := template.ParseFiles("add.html")
   t.Execute(w,nil)
+}
+
+func list(w http.ResponseWriter,r *http.Request){
+  body, err := ioutil.ReadFile("output.txt")
+  check(err)
+  todos := strings.Split(string(body),"\n")
+  t,_ := template.ParseFiles("list.html")
+  t.Execute(w,todolist{todos})
 }
 
 func save(w http.ResponseWriter,r *http.Request){
@@ -33,12 +46,6 @@ func save(w http.ResponseWriter,r *http.Request){
 
   //redirecting to the main page
   http.Redirect(w,r,"/list/",http.StatusFound)
-}
-
-func list(w http.ResponseWriter,r *http.Request){
-  // body, err := ioutil.ReadFile("output.txt")
-  // check(err)
-  //here another template will iterate through items and show them in page
 }
 
 func check(err error){

@@ -18,6 +18,16 @@ type todolist struct{
   Todos []string
 }
 
+var(
+  body []byte
+  err error
+)
+
+func init(){
+  body,err = ioutil.ReadFile("output.txt")
+  check(err)
+}
+
 func add(w http.ResponseWriter,r *http.Request){
   t,_ := template.ParseFiles("add.html")
   t.Execute(w,nil)
@@ -35,16 +45,11 @@ func save(w http.ResponseWriter,r *http.Request){
   description := r.FormValue("desc")
   newTodo := todo{description,false}
 
-  oldBody, err := ioutil.ReadFile("output.txt")
-  check(err)
-
-  bodyString := string(oldBody) + fmt.Sprintf("%v\n",newTodo)
-  err = ioutil.WriteFile("output.txt", []byte(bodyString), 0644)
+  bodyString := string(body) + fmt.Sprintf("%v\n",newTodo)
+  err := ioutil.WriteFile("output.txt", []byte(bodyString), 0644)
   check(err)
 
   fmt.Printf("todo %v added\n",newTodo)
-
-  //redirecting to the main page
   http.Redirect(w,r,"/list/",http.StatusFound)
 }
 

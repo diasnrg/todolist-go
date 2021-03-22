@@ -6,69 +6,76 @@ import(
   "fmt"
   "log"
   "io/ioutil"
-  "strings"
+  "encoding/json"
 )
 
-type todo struct{
-  description string
-  status bool
+type Todo struct{
+  Description   string  `json:description`
+  Status        bool    `json:status`
 }
 
-type todolist struct{
-  Todos []string
+type TodoList struct{
+  Todos         []Todo
 }
 
 var(
-  body []byte
-  err error
+  body    []byte
+  todos   []Todo
+  err     error
 )
 
 func init(){
+  //initialising our todolist with data from .txt file
   body,err = ioutil.ReadFile("output.txt")
-  check(err)
+  if err != nil{  log.Fatal(err)  }
+
+  err = json.Unmarshal(body,&todos)
+  if err != nil{  log.Fatal(err)  }
 }
 
 func add(w http.ResponseWriter,r *http.Request){
-  t,_ := template.ParseFiles("add.html")
-  t.Execute(w,nil)
+    t,_ := template.ParseFiles("add.html")
+    t.Execute(w,nil)
 }
 
 func list(w http.ResponseWriter,r *http.Request){
-  body, err := ioutil.ReadFile("output.txt")
-  check(err)
-  todos := strings.Split(string(body),"\n")
-  t,_ := template.ParseFiles("list.html")
-  t.Execute(w,todolist{todos})
+  //updating global variables
+    body, err = ioutil.ReadFile("output.txt")
+    if err != nil{
+      log.Fatal(err)
+    }
+    err = json.Unmarshal(body,&todos)
+    if err != nil{
+      log.Fatal(err)
+    }
+
+  //parsing template
+    t,_ := template.ParseFiles("list.html")
+    t.Execute(w,TodoList{todos})
 }
 
 func save(w http.ResponseWriter,r *http.Request){
-  description := r.FormValue("desc")
-  newTodo := todo{description,false}
+  //creating new object with form data
+    description := r.FormValue("desc")
+    newTodo := Todo{description,false}
 
-  bodyString := string(body) + fmt.Sprintf("%v\n",newTodo)
-  err := ioutil.WriteFile("output.txt", []byte(bodyString), 0644)
-  check(err)
+  //inserting new Todo to global slice of Todos and updating body([]byte)
+    todos = append(todos,newTodo)
+    body,err = json.Marshal(todos)
+    if err != nil{  log.Fatal(err)  }
 
-  fmt.Printf("todo %v added\n",newTodo)
-  http.Redirect(w,r,"/list/",http.StatusFound)
-}
+    err := ioutil.WriteFile("output.txt",body, 0644)
+    if err != nil{  log.Fatal(err)  }
 
-func check(err error){
-  if err != nil{
-    log.Fatal(err)
-  }
-}
-
-func (t todo) String() string{
-  return fmt.Sprintf("%v:%v",t.description,t.status)
+    fmt.Printf("todo %v added\n",newTodo)
+    http.Redirect(w,r,"/list/",http.StatusFound)
 }
 
 func main(){
-  http.HandleFunc("/",func(w http.ResponseWriter,r *http.Request){
-    http.Redirect(w,r,"/add/",http.StatusFound)
-  })
-  http.HandleFunc("/list/",list)
-  http.HandleFunc("/add/",add)
-  http.HandleFunc("/save/",save)
-  http.ListenAndServe(":8090",nil)
+    http.HandleFunc("/",func(w http.ResponseWriter,r *http.Request){
+      http.Redirect(w,r,"/add/",http.StatusFound)   })
+    http.HandleFunc("/list/",list)
+    http.HandleFunc("/add/",add)
+    http.HandleFunc("/save/",save)
+    http.ListenAndServe(":8090",nil)
 }

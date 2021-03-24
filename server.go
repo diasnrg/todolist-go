@@ -2,20 +2,16 @@ package main
 
 import(
   "net/http"
-  "html/template"
-  "fmt"
   "log"
   "io/ioutil"
   "encoding/json"
+  "github.com/gorilla/mux"
+  "github.com/rs/cors"
 )
 
 type Todo struct{
   Description   string  `json:description`
   Status        bool    `json:status`
-}
-
-type TodoList struct{
-  Todos         []Todo
 }
 
 var(
@@ -33,31 +29,24 @@ func init(){
   if err != nil{  log.Fatal(err)  }
 }
 
-func add(w http.ResponseWriter,r *http.Request){
-  t,_ := template.ParseFiles("add.html")
-  t.Execute(w,nil)
-}
-
 func list(w http.ResponseWriter,r *http.Request){
   //updating global variables
   body, err = ioutil.ReadFile("output.txt")
-  if err != nil{
-    log.Fatal(err)
-  }
-  err = json.Unmarshal(body,&todos)
-  if err != nil{
-    log.Fatal(err)
-  }
+  if err != nil{  log.Fatal(err)  }
 
-  //parsing template
-  t,_ := template.ParseFiles("list.html")
-  t.Execute(w,TodoList{todos})
+  err = json.Unmarshal(body,&todos)
+  if err != nil{  log.Fatal(err)  }
+
+  w.Header().Set("Content-Type","application/json")
+  json.NewEncoder(w).Encode(todos)
 }
 
 func save(w http.ResponseWriter,r *http.Request){
-  //creating new object with form data
-  description := r.FormValue("desc")
-  newTodo := Todo{description,false}
+  //decoding the data from request body and writing it to todo struct
+  var newTodo Todo
+  err = json.NewDecoder(r.Body).Decode(&newTodo)
+  //error will be when the json is not in correct format
+  if err != nil{  log.Fatal(err)  }
 
   //inserting new Todo to global slice of Todos and updating body([]byte)
   todos = append(todos,newTodo)
@@ -67,15 +56,21 @@ func save(w http.ResponseWriter,r *http.Request){
   err := ioutil.WriteFile("output.txt",body, 0644)
   if err != nil{  log.Fatal(err)  }
 
-  fmt.Printf("todo %v added\n",newTodo)
-  http.Redirect(w,r,"/list/",http.StatusFound)
+  log.Printf("todo %v added\n",newTodo)
+  w.Header().Set("Content-Type","application/json")
+  json.NewEncoder(w).Encode(newTodo)
 }
 
 func main(){
-  http.HandleFunc("/",func(w http.ResponseWriter,r *http.Request){
-    http.Redirect(w,r,"/add/",http.StatusFound)   })
-  http.HandleFunc("/list/",list)
-  http.HandleFunc("/add/",add)
-  http.HandleFunc("/save/",save)
-  http.ListenAndServe(":8090",nil)
+  r := mux.NewRouter()
+  r.HandleFunc("/list/",list).Methods("GET")
+  r.HandleFunc("/save/",save).Methods("POST")
+
+  //for CORS error
+  handler := cors.New(cors.Options{
+    AllowedMethods: []string{"GET","POST"},
+  }).Handler(r)
+
+  http.Handle("/",r)
+  http.ListenAndServe(":8090",handler)
 }

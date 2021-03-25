@@ -1,5 +1,17 @@
 const url = 'http://localhost:8090'
 document.querySelector('.btgetlist').addEventListener('click',getlist)
+document.querySelector('.btadd').addEventListener('click',addTodo)
+
+async function addTodo(){
+  const description = document.querySelector('.description').value
+  const response = await fetch(url+'/save/',{
+    method:'POST',
+    headers:{
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({'description':description,'status':false})
+  })
+}
 
 async function getlist(){
   const response = await fetch(url+'/list/')

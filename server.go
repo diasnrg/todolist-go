@@ -45,7 +45,7 @@ func save(w http.ResponseWriter,r *http.Request){
   //decoding the data from request body and writing it to todo struct
   var newTodo Todo
   err = json.NewDecoder(r.Body).Decode(&newTodo)
-  //error will be when the json is not in correct format
+  // error will be when the json is not in correct format
   if err != nil{  log.Fatal(err)  }
 
   //inserting new Todo to global slice of Todos and updating body([]byte)

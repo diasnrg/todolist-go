@@ -10,8 +10,8 @@ import(
 )
 
 type Todo struct{
-  Description   string  `json:description`
-  Status        bool    `json:status`
+  Description   string
+  Status        bool
 }
 
 var(
@@ -20,45 +20,43 @@ var(
   err     error
 )
 
+//initialising our todolist with data from .txt file
 func init(){
-  //initialising our todolist with data from .txt file
+  //creating the body([]byte)
   body,err = ioutil.ReadFile("output.txt")
   if err != nil{  log.Fatal(err)  }
-
+  //converting body from json to struct([]Todo)
   err = json.Unmarshal(body,&todos)
   if err != nil{  log.Fatal(err)  }
 }
 
 func list(w http.ResponseWriter,r *http.Request){
-  //updating global variables
-  body, err = ioutil.ReadFile("output.txt")
-  if err != nil{  log.Fatal(err)  }
-
-  err = json.Unmarshal(body,&todos)
-  if err != nil{  log.Fatal(err)  }
-
   w.Header().Set("Content-Type","application/json")
   json.NewEncoder(w).Encode(todos)
 }
 
 func save(w http.ResponseWriter,r *http.Request){
-  //decoding the data from request body and writing it to todo struct
   var newTodo Todo
+  //decoding the data from request's body and writing it to the new todo struct, error will be when the json is not in correct format
   err = json.NewDecoder(r.Body).Decode(&newTodo)
-  // error will be when the json is not in correct format
   if err != nil{  log.Fatal(err)  }
 
-  //inserting new Todo to global slice of Todos and updating body([]byte)
+  //inserting new Todo to global slice of Todos and updating the .txt file
   todos = append(todos,newTodo)
-  body,err = json.Marshal(todos)
-  if err != nil{  log.Fatal(err)  }
-
-  err := ioutil.WriteFile("output.txt",body, 0644)
-  if err != nil{  log.Fatal(err)  }
+  updateTxt()
 
   log.Printf("todo %v added\n",newTodo)
   w.Header().Set("Content-Type","application/json")
   json.NewEncoder(w).Encode(newTodo)
+}
+
+func updateTxt(){
+  //convert []Todo to json format([]byte)
+  body,err = json.Marshal(todos)
+  if err != nil{  log.Fatal(err)  }
+  
+  err := ioutil.WriteFile("output.txt",body, 0644)
+  if err != nil{  log.Fatal(err)  }
 }
 
 func main(){

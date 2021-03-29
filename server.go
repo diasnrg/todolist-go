@@ -7,6 +7,8 @@ import(
   "encoding/json"
   "github.com/gorilla/mux"
   "github.com/rs/cors"
+  "database/sql"
+  _ "github.com/lib/pq"
 )
 
 type Todo struct{
@@ -54,12 +56,25 @@ func updateTxt(){
   //convert []Todo to json format([]byte)
   body,err = json.Marshal(todos)
   if err != nil{  log.Fatal(err)  }
-  
+
   err := ioutil.WriteFile("output.txt",body, 0644)
   if err != nil{  log.Fatal(err)  }
 }
 
 func main(){
+
+  db, err := sql.Open("postgres","host=localhost password=postgres dbname=todolist sslmode=disable")
+  if err != nil{
+    log.Fatal(err)
+  }
+  defer db.Close()
+
+  err = db.Ping()
+  if err != nil{
+    log.Fatal(err)
+  }
+  log.Println("Connected to the database")
+
   r := mux.NewRouter()
   r.HandleFunc("/list/",list).Methods("GET")
   r.HandleFunc("/save/",save).Methods("POST")

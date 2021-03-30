@@ -3,7 +3,6 @@ package main
 import(
   "net/http"
   "log"
-  "io/ioutil"
   "encoding/json"
   "github.com/gorilla/mux"
   "github.com/rs/cors"
@@ -12,24 +11,44 @@ import(
 )
 
 type Todo struct{
+  Id            int
   Description   string
   Status        bool
 }
 
 var(
-  body    []byte
+  db      *sql.DB
   todos   []Todo
   err     error
 )
 
-//initialising our todolist with data from .txt file
-func init(){
-  //creating the body([]byte)
-  body,err = ioutil.ReadFile("output.txt")
+func connectDB(){
+  db, err = sql.Open("postgres","host=localhost password=postgres dbname=todolist sslmode=disable")
   if err != nil{  log.Fatal(err)  }
-  //converting body from json to struct([]Todo)
-  err = json.Unmarshal(body,&todos)
+
+  err = db.Ping()
   if err != nil{  log.Fatal(err)  }
+  log.Println("Connected to the database")
+}
+
+func updateTodos(){
+  var id int
+  var description string
+  var status bool
+
+  rows, err := db.Query("select id, description, status from todos")
+  if err != nil{  log.Fatal(err)  }
+  defer rows.Close()
+
+  for rows.Next(){
+    err = rows.Scan(&id, &description, &status)
+    todos = append(todos,Todo{id, description, status})
+    if err != nil { log.Fatal(err) }
+  }
+
+  if err = rows.Err(); err != nil{
+    log.Fatal(err)
+  }
 }
 
 func list(w http.ResponseWriter,r *http.Request){
@@ -43,37 +62,18 @@ func save(w http.ResponseWriter,r *http.Request){
   err = json.NewDecoder(r.Body).Decode(&newTodo)
   if err != nil{  log.Fatal(err)  }
 
-  //inserting new Todo to global slice of Todos and updating the .txt file
   todos = append(todos,newTodo)
-  updateTxt()
-
   log.Printf("todo %v added\n",newTodo)
   w.Header().Set("Content-Type","application/json")
   json.NewEncoder(w).Encode(newTodo)
 }
 
-func updateTxt(){
-  //convert []Todo to json format([]byte)
-  body,err = json.Marshal(todos)
-  if err != nil{  log.Fatal(err)  }
-
-  err := ioutil.WriteFile("output.txt",body, 0644)
-  if err != nil{  log.Fatal(err)  }
-}
-
 func main(){
+  connectDB()
+  updateTodos()
 
-  db, err := sql.Open("postgres","host=localhost password=postgres dbname=todolist sslmode=disable")
-  if err != nil{
-    log.Fatal(err)
-  }
   defer db.Close()
-
-  err = db.Ping()
-  if err != nil{
-    log.Fatal(err)
-  }
-  log.Println("Connected to the database")
+  log.Println(todos)
 
   r := mux.NewRouter()
   r.HandleFunc("/list/",list).Methods("GET")

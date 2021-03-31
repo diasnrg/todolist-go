@@ -18,9 +18,13 @@ type Todo struct{
 
 var(
   db      *sql.DB
-  todos   []Todo
+  todos   map[int]Todo
   err     error
 )
+
+func init(){
+  todos = make(map[int]Todo)
+}
 
 func connectDB(){
   db, err = sql.Open("postgres","host=localhost password=postgres dbname=todolist sslmode=disable")
@@ -36,13 +40,13 @@ func updateTodos(){
   var description string
   var status bool
 
-  rows, err := db.Query("select id, description, status from todos")
+  rows, err := db.Query("SELECT id, description, status FROM todos")
   if err != nil{  log.Fatal(err)  }
   defer rows.Close()
 
   for rows.Next(){
     err = rows.Scan(&id, &description, &status)
-    todos = append(todos,Todo{id, description, status})
+    todos[id] = Todo{id, description, status}
     if err != nil { log.Fatal(err) }
   }
 
@@ -56,17 +60,24 @@ func list(w http.ResponseWriter,r *http.Request){
   json.NewEncoder(w).Encode(todos)
 }
 
-func save(w http.ResponseWriter,r *http.Request){
+func add(w http.ResponseWriter,r *http.Request){
   var newTodo Todo
   //decoding the data from request's body and writing it to the new todo struct, error will be when the json is not in correct format
   err = json.NewDecoder(r.Body).Decode(&newTodo)
   if err != nil{  log.Fatal(err)  }
 
-  todos = append(todos,newTodo)
-  log.Printf("todo %v added\n",newTodo)
+  //insert the new Todo to database, return it's new id
+  err := db.QueryRow("INSERT INTO todos(description) VALUES($1) RETURNING id",newTodo.Description).Scan(&newTodo.Id)
+  if err != nil{  log.Fatal(err)  }
+
+  log.Printf("{id:%v, description:%v, status:%v} added\n", newTodo.Id, newTodo.Description, newTodo.Status)
   w.Header().Set("Content-Type","application/json")
   json.NewEncoder(w).Encode(newTodo)
 }
+
+// func delete(w http.ResponseWriter,r *http.Request){
+//
+// }
 
 func main(){
   connectDB()
@@ -77,7 +88,8 @@ func main(){
 
   r := mux.NewRouter()
   r.HandleFunc("/list/",list).Methods("GET")
-  r.HandleFunc("/save/",save).Methods("POST")
+  r.HandleFunc("/add/",add).Methods("POST")
+  // r.HandleFunc("/delete/",delete).Methods("DELETE")
 
   //for CORS error
   handler := cors.New(cors.Options{

@@ -1,2 +1,2 @@
-#To-do list project
+To-do list project, 
 Go, JavaScript and PostgreSQL

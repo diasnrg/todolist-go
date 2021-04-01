@@ -36,17 +36,14 @@ func connectDB(){
 }
 
 func updateTodos(){
-  var id int
-  var description string
-  var status bool
-
   rows, err := db.Query("SELECT id, description, status FROM todos")
   if err != nil{  log.Fatal(err)  }
   defer rows.Close()
 
+  var newTodo Todo
   for rows.Next(){
-    err = rows.Scan(&id, &description, &status)
-    todos[id] = Todo{id, description, status}
+    err = rows.Scan(&newTodo.Id, &newTodo.Description, &newTodo.Status)
+    todos[newTodo.Id] = newTodo
     if err != nil { log.Fatal(err) }
   }
 
@@ -75,9 +72,15 @@ func add(w http.ResponseWriter,r *http.Request){
   json.NewEncoder(w).Encode(newTodo)
 }
 
-// func delete(w http.ResponseWriter,r *http.Request){
-//
-// }
+func delete(w http.ResponseWriter,r *http.Request){
+  //mux's method which takes the values after /delete/ and saves them to map 'vars'
+  vars := mux.Vars(r)
+  id := vars["id"]
+
+  _, err := db.Exec("DELETE FROM todos WHERE id = $1", id)
+  if err != nil{  log.Fatal(err)  }
+  log.Printf("todo with id=%v deleted", id)
+}
 
 func main(){
   connectDB()
@@ -89,11 +92,11 @@ func main(){
   r := mux.NewRouter()
   r.HandleFunc("/list/",list).Methods("GET")
   r.HandleFunc("/add/",add).Methods("POST")
-  // r.HandleFunc("/delete/",delete).Methods("DELETE")
+  r.HandleFunc("/delete/{id}",delete).Methods("DELETE")
 
   //for CORS error
   handler := cors.New(cors.Options{
-    AllowedMethods: []string{"GET","POST"},
+    AllowedMethods: []string{"GET","POST","DELETE"},
   }).Handler(r)
 
   http.Handle("/",r)

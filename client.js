@@ -5,7 +5,7 @@ document.querySelector('#btadd').addEventListener('click',addTodo)
 async function addTodo(){
   const input = document.querySelector('#description')
   const description = input.value
-  const response = await fetch(url+'/save/',{
+  const response = await fetch(url+'/add/',{
     method:'POST',
     headers:{
       'Content-Type': 'application/json'
@@ -24,7 +24,7 @@ async function getlist(){
 
 function objectToString(data){
   result = []
-  data.forEach(obj => {
+  Array.from(data).forEach(obj => {
     result.push(obj.Description)
   })
   return result

@@ -8,6 +8,7 @@ import(
   "github.com/rs/cors"
   "database/sql"
   _ "github.com/lib/pq"
+  "strconv"
 )
 
 type Todo struct{
@@ -32,7 +33,7 @@ func connectDB(){
 
   err = db.Ping()
   if err != nil{  log.Fatal(err)  }
-  log.Println("Connected to the database")
+  log.Println("connected to the database...")
 }
 
 func updateTodos(){
@@ -57,7 +58,7 @@ func list(w http.ResponseWriter,r *http.Request){
   json.NewEncoder(w).Encode(todos)
 }
 
-func add(w http.ResponseWriter,r *http.Request){
+func addItem(w http.ResponseWriter,r *http.Request){
   var newTodo Todo
   //decoding the data from request's body and writing it to the new todo struct, error will be when the json is not in correct format
   err = json.NewDecoder(r.Body).Decode(&newTodo)
@@ -67,18 +68,21 @@ func add(w http.ResponseWriter,r *http.Request){
   err := db.QueryRow("INSERT INTO todos(description) VALUES($1) RETURNING id",newTodo.Description).Scan(&newTodo.Id)
   if err != nil{  log.Fatal(err)  }
 
+  todos[newTodo.Id]=newTodo
   log.Printf("{id:%v, description:%v, status:%v} added\n", newTodo.Id, newTodo.Description, newTodo.Status)
   w.Header().Set("Content-Type","application/json")
   json.NewEncoder(w).Encode(newTodo)
 }
 
-func delete(w http.ResponseWriter,r *http.Request){
+func deleteItem(w http.ResponseWriter,r *http.Request){
   //mux's method which takes the values after /delete/ and saves them to map 'vars'
   vars := mux.Vars(r)
-  id := vars["id"]
+  id, _ := strconv.Atoi(vars["id"])
 
   _, err := db.Exec("DELETE FROM todos WHERE id = $1", id)
   if err != nil{  log.Fatal(err)  }
+
+  delete(todos, id)
   log.Printf("todo with id=%v deleted", id)
 }
 
@@ -91,8 +95,8 @@ func main(){
 
   r := mux.NewRouter()
   r.HandleFunc("/list/",list).Methods("GET")
-  r.HandleFunc("/add/",add).Methods("POST")
-  r.HandleFunc("/delete/{id}",delete).Methods("DELETE")
+  r.HandleFunc("/add/",addItem).Methods("POST")
+  r.HandleFunc("/delete/{id}",deleteItem).Methods("DELETE")
 
   //for CORS error
   handler := cors.New(cors.Options{

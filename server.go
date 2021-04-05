@@ -36,7 +36,7 @@ func connectDB(){
   log.Println("connected to the database...")
 }
 
-func updateTodos(){
+func initTodos(){
   rows, err := db.Query("SELECT id, description, status FROM todos")
   if err != nil{  log.Fatal(err)  }
   defer rows.Close()
@@ -68,7 +68,7 @@ func addItem(w http.ResponseWriter,r *http.Request){
   err := db.QueryRow("INSERT INTO todos(description) VALUES($1) RETURNING id",newTodo.Description).Scan(&newTodo.Id)
   if err != nil{  log.Fatal(err)  }
 
-  todos[newTodo.Id]=newTodo
+  todos[newTodo.Id] = newTodo
   log.Printf("{id:%v, description:%v, status:%v} added\n", newTodo.Id, newTodo.Description, newTodo.Status)
   w.Header().Set("Content-Type","application/json")
   json.NewEncoder(w).Encode(newTodo)
@@ -86,9 +86,21 @@ func deleteItem(w http.ResponseWriter,r *http.Request){
   log.Printf("todo with id=%v deleted", id)
 }
 
+func updateItem(w http.ResponseWriter,r *http.Request){
+  vars := mux.Vars(r)
+  id, _ := strconv.Atoi(vars["id"])
+  newStatus := !todos[id].Status
+
+  _, err := db.Exec("UPDATE todos SET Status = $2 WHERE Id = $1", id, newStatus)
+  if err != nil{  log.Fatal(err)  }
+
+  todos[id] = Todo{id,todos[id].Description,newStatus}
+  log.Printf("todo with id=%v updated to %v", id, newStatus)
+}
+
 func main(){
   connectDB()
-  updateTodos()
+  initTodos()
 
   defer db.Close()
   log.Println(todos)
@@ -97,10 +109,11 @@ func main(){
   r.HandleFunc("/list/",list).Methods("GET")
   r.HandleFunc("/add/",addItem).Methods("POST")
   r.HandleFunc("/delete/{id}",deleteItem).Methods("DELETE")
+  r.HandleFunc("/update/{id}",updateItem).Methods("POST")
 
   //for CORS error
   handler := cors.New(cors.Options{
-    AllowedMethods: []string{"GET","POST","DELETE"},
+    AllowedMethods: []string{"GET","POST","DELETE","UPDATE"},
   }).Handler(r)
 
   http.Handle("/",r)

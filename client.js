@@ -1,6 +1,7 @@
 const url = 'http://localhost:8090'
-document.querySelector('#btadd').addEventListener('click',addItemToDB)
+const inputDescription = document.querySelector('#description')
 const list = document.querySelector('#list')
+document.querySelector('#btadd').addEventListener('click',addItemToDB)
 getlist()
 
 async function getlist(){
@@ -14,9 +15,8 @@ async function getlist(){
 }
 
 async function addItemToDB(){
-  const input = document.querySelector('#description')
-  const description = input.value
-  input.value = ''
+  const description = inputDescription.value
+  inputDescription.value = ''
   const data = await fetch(url+'/add/',{
     method:'POST',
     headers:{
@@ -28,25 +28,8 @@ async function addItemToDB(){
     getlist()
 }
 
-function addItemToDOM(id,todo){
-  const item = document.createElement('div')
-  const description = document.createElement('div')
-  const btdelete = document.createElement('button')
-
-  item.id = id
-  description.innerHTML = todo.Description
-  btdelete.textContent = 'delete'
-  btdelete.addEventListener('click',removeItem)
-
-  item.appendChild(description)
-  item.appendChild(btdelete)
-  btdelete.className += 'btn btn-danger'
-  item.className += 'd-flex justify-content-between w-50 p-2 my-4 border border-warning align-items-center rounded'
-  list.appendChild(item)
-}
-
-async function removeItem(item){
-  const id = item.target.parentElement.id
+async function deleteItemDB(item){
+  const id = item.target.parentElement.parentElement.id
   const data = await fetch(url+'/delete/'+id,{
     method:'DELETE',
     headers:{
@@ -54,4 +37,58 @@ async function removeItem(item){
     }
   })
   getlist()
+}
+
+async function updateItemDB(item){
+  const id = item.target.parentElement.parentElement.id
+  const data = await fetch(url+'/update/'+id,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json'
+    }
+  })
+
+}
+
+function updateItemDOM(id, status){
+  //change the uptade button and make/remove line-through
+  // const item = document.querySelector('#${id}')
+  // const description = item.childNotes[1]
+  // console.log(description)
+  // if(status){
+  //   description.style.textDecoration = 'line-through'
+  //   btupdate.classList.add('btn-warning')
+  // }else{
+  //   description.style.textDecoration = 'none'
+  //   btupdate.classList.add('btn-success')
+  // }
+}
+
+function addItemToDOM(id,todo){
+  const item = document.createElement('div')
+  const description = document.createElement('div')
+  const btns = document.createElement('div')
+  const btdelete = document.createElement('button')
+  const btupdate = document.createElement('button')
+
+  item.id = id
+  item.className += 'd-flex justify-content-between align-items-center w-50 p-2 my-4 border rounded'
+
+  description.textContent = todo.Description
+
+  btupdate.textContent = 'update'
+  btupdate.addEventListener('click',updateItemDB)
+  btupdate.classList.add('btn')
+
+  btdelete.textContent = 'delete'
+  btdelete.addEventListener('click',deleteItemDB)
+  btdelete.className += 'btn btn-danger'
+
+  item.appendChild(description)
+  btns.appendChild(btupdate)
+  btns.appendChild(btdelete)
+  item.appendChild(btns)
+  list.appendChild(item)
+  //don't work yet
+  updateItemDOM(id, status)
 }

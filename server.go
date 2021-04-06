@@ -96,6 +96,8 @@ func updateItem(w http.ResponseWriter,r *http.Request){
 
   todos[id] = Todo{id,todos[id].Description,newStatus}
   log.Printf("todo with id=%v updated to %v", id, newStatus)
+  w.Header().Set("Content-Type","application/json")
+  json.NewEncoder(w).Encode(newStatus)
 }
 
 func main(){
@@ -113,7 +115,7 @@ func main(){
 
   //for CORS error
   handler := cors.New(cors.Options{
-    AllowedMethods: []string{"GET","POST","DELETE","UPDATE"},
+    AllowedMethods: []string{"GET","POST","DELETE"},
   }).Handler(r)
 
   http.Handle("/",r)

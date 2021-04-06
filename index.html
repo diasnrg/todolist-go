@@ -5,10 +5,15 @@
   </head>
   <body>
     <div class='container'>
-      <h1>to-do app</h1>
-      <div class='d-flex w-50'>
+      <h1>todolist</h1>
+      <div class='d-flex w-50 mb-3'>
         <input type='text' id='description' class='form-control' placeholder='enter the description...'>
-        <button id='btadd' class='btn btn-success'>add</button>
+        <button id='btadd' class='btn btn-primary'>add</button>
+      </div>
+      <div class='d-flex'>
+        <button id='btlist' class='btn btn-primary'>todolist</button>        
+        <button id='btcompleted' class='btn btn-success'>completed</button>
+        <button id='btuncompleted' class='btn btn-warning'>uncompleted</button>
       </div>
       <div id='list'></div>
     </div>

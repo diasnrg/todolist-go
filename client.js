@@ -1,42 +1,35 @@
 const url = 'http://localhost:8090'
-const inputDescription = document.querySelector('#description')
 const list = document.querySelector('#list')
-document.querySelector('#btadd').addEventListener('click',addItemToDB)
-document.querySelector('#btlist').addEventListener('click',getItems)
-document.querySelector('#btcompleted').addEventListener('click',()=>{   getByStatus(true)   })
-document.querySelector('#btuncompleted').addEventListener('click',()=>{ getByStatus(false)  })
 
+//{state=null} - all tasks, {state=true} - completed tasks, {state=false} - upcompleted tasks
+var state = null
+
+document.querySelector('#btadd').addEventListener('click',addItemDB)
+document.querySelector('#btlist').addEventListener('click',()=>{        state=null; getItems(state) })
+document.querySelector('#btcompleted').addEventListener('click',()=>{   state=true; getItems(state) })
+document.querySelector('#btuncompleted').addEventListener('click',()=>{ state=false;getItems(state) })
 getItems()
-var todoMap = []
 
-//get all of the todos with fetch request to db
-async function updateList(){
-  const response = await fetch(url+'/list/').then(response => response.json())
-  //converting json object to map, 'cause otherwise i can't iterate it lol
-  todoMap = new Map(Object.entries(response))
-  console.log(todoMap)
-}
-
-async function getItems(){
-  const response = await updateList()
+async function getItems(state){
   list.innerHTML = ''
-  for(let [id,todo] of todoMap.entries()){
-    addItemToDOM(id,todo)
-  }
-}
+  //fetch the back end api to retrieve tasks
+  const response = await fetch(url+'/tasks/').then(response => response.json())
 
-async function getByStatus(status){
-  const response = await updateList()
-  list.innerHTML = ''
-  for(let [id,todo] of todoMap.entries()){
-    if(status == todo.Status){
-      addItemToDOM(id,todo)
+  //converting json object to map, because otherwise i can't iterate it lol
+  const tasksMap = new Map(Object.entries(response))
+  console.log(tasksMap)
+
+  //iterating the tasks(map) and adding new tasks to DOM
+  for(let [id,t] of tasksMap.entries()){
+    if(state == null || state == t.Status){
+      addItemDOM(id,t)
     }
   }
 }
 
-//create new todo item from input's value and send it to db
-async function addItemToDB(){
+//create new task item from input's value and send it to the back end
+async function addItemDB(){
+  const inputDescription = document.querySelector('#description')
   const description = inputDescription.value
   inputDescription.value = ''
   const data = await fetch(url+'/add/',{
@@ -47,10 +40,10 @@ async function addItemToDB(){
     body: JSON.stringify({'description':description})
     })
     .then(response => response.json())
-  getItems()
+  getItems(state)
 }
 
-//delete the todo from db by fetching with it's id
+//delete the task from back end by fetching with it's id
 async function deleteItemDB(item){
   const id = item.target.parentElement.parentElement.id
   const data = await fetch(url+'/delete/'+id,{
@@ -59,22 +52,22 @@ async function deleteItemDB(item){
       'Content-Type':'application/json'
     }
   })
-  getItems()
+  getItems(state)
 }
 
-//complete/uncomplete todo and fetch to database
+//complete/uncomplete task and fetch to back end
 async function updateItemDB(item){
   const id = item.target.parentElement.parentElement.id
-  const newStatus = await fetch(url+'/update/'+id,{
+  const status = await fetch(url+'/update/'+id,{
     method:'POST',
     headers:{
       'Content-Type':'application/json'
     }
   }).then(response => response.json())
-  updateItemDOM(id,newStatus)
+  updateItemDOM(id,status)
 }
 
-//updates the todo's DOM depending on it's status (true/false)
+//updates the task's DOM depending on it's status value (true/false)
 function updateItemDOM(id, status){
   const item = document.getElementById(id)
   const description = item.children[0]
@@ -90,8 +83,8 @@ function updateItemDOM(id, status){
   }
 }
 
-//adds new todo card(div) to dom, sticks todo's id to div's id
-function addItemToDOM(id,todo){
+//adds new task card(div) to dom, sticks task's id to div's id
+function addItemDOM(id,task){
   const item = document.createElement('div')
   const description = document.createElement('div')
   const btns = document.createElement('div')
@@ -99,9 +92,9 @@ function addItemToDOM(id,todo){
   const btupdate = document.createElement('button')
 
   item.id = id
-  item.className += 'd-flex justify-content-between align-items-center w-50 p-2 my-4 border rounded'
+  item.className += 'd-flex justify-content-between align-items-center p-2 my-4 border rounded'
 
-  description.textContent = todo.Description
+  description.textContent = task.Description
 
   btupdate.textContent = 'update'
   btupdate.addEventListener('click',updateItemDB)
@@ -117,5 +110,5 @@ function addItemToDOM(id,todo){
   item.appendChild(btns)
   list.appendChild(item)
 
-  updateItemDOM(id, todo.Status)
+  updateItemDOM(id, task.Status)
 }

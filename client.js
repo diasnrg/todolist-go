@@ -1,15 +1,16 @@
 const url = 'http://localhost:8090'
-const list = document.querySelector('#list')
+const list = document.querySelector('#tasks')
 
-//{state=null} - all tasks, {state=true} - completed tasks, {state=false} - upcompleted tasks
+//{state=null} - all tasks, {state=true} - completed tasks, {state=false} - incompleted tasks
 var state = null
 
 document.querySelector('#btadd').addEventListener('click',addItemDB)
-document.querySelector('#btlist').addEventListener('click',()=>{        state=null; getItems(state) })
+document.querySelector('#btalltasks').addEventListener('click',()=>{    state=null; getItems(state) })
 document.querySelector('#btcompleted').addEventListener('click',()=>{   state=true; getItems(state) })
-document.querySelector('#btuncompleted').addEventListener('click',()=>{ state=false;getItems(state) })
+document.querySelector('#btincompleted').addEventListener('click',()=>{ state=false;getItems(state) })
 getItems()
 
+//get the tasks from the back end API
 async function getItems(state){
   list.innerHTML = ''
   //fetch the back end api to retrieve tasks
@@ -17,7 +18,6 @@ async function getItems(state){
 
   //converting json object to map, because otherwise i can't iterate it lol
   const tasksMap = new Map(Object.entries(response))
-  console.log(tasksMap)
 
   //iterating the tasks(map) and adding new tasks to DOM
   for(let [id,t] of tasksMap.entries()){
@@ -31,7 +31,15 @@ async function getItems(state){
 async function addItemDB(){
   const inputDescription = document.querySelector('#description')
   const description = inputDescription.value
+
+  //check for non-empty input
+  if(description == ''){
+    console.log('Empty string is not a valid task')
+    return
+  }
+
   inputDescription.value = ''
+
   const data = await fetch(url+'/add/',{
     method:'POST',
     headers:{
@@ -39,7 +47,7 @@ async function addItemDB(){
     },
     body: JSON.stringify({'description':description})
     })
-    .then(response => response.json())
+  .then(response => response.json())
   getItems(state)
 }
 
@@ -55,7 +63,7 @@ async function deleteItemDB(item){
   getItems(state)
 }
 
-//complete/uncomplete task and fetch to back end
+//complete/incomplete the task and fetch to back end
 async function updateItemDB(item){
   const id = item.target.parentElement.parentElement.id
   const status = await fetch(url+'/update/'+id,{
@@ -74,12 +82,14 @@ function updateItemDOM(id, status){
   const btupdate = item.children[1].children[0]
   if(status){
     description.style.textDecoration = 'line-through'
-    btupdate.classList.remove('btn-success')
-    btupdate.classList.add('btn-warning')
-  }else{
-    description.style.textDecoration = 'none'
     btupdate.classList.remove('btn-warning')
     btupdate.classList.add('btn-success')
+    btupdate.textContent = '[1]'
+  }else{
+    description.style.textDecoration = 'none'
+    btupdate.classList.remove('btn-success')
+    btupdate.classList.add('btn-warning')
+    btupdate.textContent = '[0]'
   }
 }
 
@@ -96,11 +106,10 @@ function addItemDOM(id,task){
 
   description.textContent = task.Description
 
-  btupdate.textContent = 'update'
   btupdate.addEventListener('click',updateItemDB)
   btupdate.classList.add('btn')
 
-  btdelete.textContent = 'delete'
+  btdelete.textContent = '[x]'
   btdelete.addEventListener('click',deleteItemDB)
   btdelete.className += 'btn btn-danger'
 

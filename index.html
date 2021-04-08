@@ -5,17 +5,17 @@
   </head>
   <body>
     <div class='container w-50'>
-      <h1>tasks</h1>
+      <h1>todolist</h1>
       <div class='d-flex mb-3'>
         <input type='text' id='description' class='form-control' placeholder='enter the description...'>
-        <button id='btadd' class='btn btn-primary'>add</button>
+        <button id='btadd' class='btn btn-warning'>[+]</button>
       </div>
-      <div class='d-flex justify-content-between'>
-        <button id='btlist' class='btn btn-primary'>all tasks</button>
-        <button id='btcompleted' class='btn btn-success'>completed</button>
-        <button id='btuncompleted' class='btn btn-warning'>uncompleted</button>
+      <div class='d-flex'>
+        <button id='btalltasks' class='btn btn-primary'>tasks</button>
+        <button id='btincompleted' class='btn btn-warning'>[0]</button>
+        <button id='btcompleted' class='btn btn-success'>[1]</button>
       </div>
-      <div id='list'></div>
+      <div id='tasks'></div>
     </div>
   </body>
-</html
+</html>

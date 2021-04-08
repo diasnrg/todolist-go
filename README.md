@@ -7,4 +7,4 @@ Built a simple API server on Golang and implement CRUD operations and saving to 
 - lib/pq driver (PostgreSQL) to implement database/sql package
 - rs/cors to connect to API from front end
 
-![screencast](https://github.com/vdios/todolist-go/todolist_screencast.gif")
+![screencast](https://github.com/vdios/todolist-go/todolist_screencast.gif)

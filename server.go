@@ -20,7 +20,7 @@ type Task struct{
 var(
   //database object
   db      *sql.DB
-  //map save tasks
+  //map to keep tasks in the global variable
   tasks   map[int]Task
   err     error
 )
@@ -132,7 +132,7 @@ func updateItem(w http.ResponseWriter,r *http.Request){
 func main(){
   //close the db in the end
   defer db.Close()
-  log.Println(tasks)
+  log.Printf("tasks: %v", tasks)
 
   //routing the requests
   r := mux.NewRouter()
@@ -141,7 +141,7 @@ func main(){
   r.HandleFunc("/delete/{id}",deleteItem).Methods("DELETE")
   r.HandleFunc("/update/{id}",updateItem).Methods("POST")
 
-  //wrapping the CORS header to be able to connect our API to front end
+  //wrapping the CORS header to be able to connect our API to the front end
   handler := cors.New(cors.Options{
     AllowedMethods: []string{"GET","POST","DELETE"},
   }).Handler(r)

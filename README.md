@@ -1,6 +1,6 @@
 # To-Do List
 ## Go, JavaScript, PostgreSQL
-Built a simple API server on Golang and implement CRUD operations and saving to database using standart library **database/sql** and driver for PostgreSQL. Javascript and Bootstrap used for client-side user interface (front end).
+Built a simple API server with Golang. Implemented CRUD operations and saving to database using standard library **database/sql** with driver for PostgreSQL. Javascript and Bootstrap used for client-side user interface (front end).
 ### additional libraries:
 - gorilla/mux for routing requests
 - database/sql to provide generic interface around SQL database
